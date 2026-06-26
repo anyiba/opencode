@@ -23,6 +23,19 @@ import { Reference } from "@opencode-ai/core/reference"
 import { MCP } from "@/mcp"
 import { PermissionV1 } from "@opencode-ai/core/v1/permission"
 
+export const TOOL_BATCHING_PROMPT = [
+  "<tool_batching>",
+  "Plan tool use in dependency-aware waves.",
+  "Before calling tools, identify every tool call that can be decided from the current context.",
+  "Emit independent tool calls together in the same assistant turn so the runtime can execute them concurrently.",
+  "For discovery, search, and reading work, request all currently known relevant targets in one batch instead of reading them one by one.",
+  "Do not issue a tool call whose arguments depend on a pending tool result. Wait for the required results, then plan the next wave.",
+  "Treat returned tool results as the synchronization boundary for the next dependent decision.",
+  "When partial results arrive, continue only with work that is independent of the missing results.",
+  "Before destructive actions, validation, or declaring completion, ensure every required tool result has completed successfully.",
+  "</tool_batching>",
+].join("\n")
+
 export function provider(model: Provider.Model) {
   if (model.api.id.includes("gpt-4") || model.api.id.includes("o1") || model.api.id.includes("o3"))
     return [PROMPT_BEAST]
@@ -72,6 +85,7 @@ export const layer = Layer.effect(
             `  Today's date: ${new Date().toDateString()}`,
             `</env>`,
           ].join("\n"),
+          TOOL_BATCHING_PROMPT,
           references.length === 0
             ? undefined
             : [
