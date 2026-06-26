@@ -1,10 +1,10 @@
-import { describe, expect } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { Effect, Layer } from "effect"
 import type { Agent } from "../../src/agent/agent"
 import { NamedError } from "@opencode-ai/core/util/error"
 import { Skill } from "../../src/skill"
 import { Permission } from "../../src/permission"
-import { SystemPrompt } from "../../src/session/system"
+import { SystemPrompt, TOOL_BATCHING_PROMPT } from "../../src/session/system"
 import { MCP } from "../../src/mcp"
 import { LocationServiceMap } from "@opencode-ai/core/location-layer"
 import { testEffect } from "../lib/effect"
@@ -82,6 +82,12 @@ const it = testEffect(
 )
 
 describe("session.system", () => {
+  test("tool batching prompt requires dependency-aware waves", () => {
+    expect(TOOL_BATCHING_PROMPT).toContain("Emit independent tool calls together")
+    expect(TOOL_BATCHING_PROMPT).toContain("Do not issue a tool call whose arguments depend on a pending tool result")
+    expect(TOOL_BATCHING_PROMPT).toContain("Before destructive actions, validation, or declaring completion")
+  })
+
   it.effect("skills output is sorted by name and stable across calls", () =>
     Effect.gen(function* () {
       const prompt = yield* SystemPrompt.Service
